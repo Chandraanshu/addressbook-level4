@@ -46,4 +46,16 @@ public class ArgumentsParserTest {
         assertEquals("Newgate Prison", result.getOnceArgumentValue(Parser.addressArg).get());
         assertEquals(tags, result.getRepeatableArgumentValue(Parser.tagArgs).get());
     }
+
+    @Test
+    public void parse_validAddCmdArgsChangeOrder() {
+        ArgumentsParser argsParser = new ArgumentsParser(Parser.addCmdArgs);
+        ParsedArguments result = argsParser.parse(
+                "John Doe e/johnd@gmail.com a/John street, block 123, #01-01 p/98765432");
+
+        assertEquals("John Doe", result.getNonPrefixArgument().get());
+        assertEquals("98765432", result.getOnceArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("johnd@gmail.com", result.getOnceArgumentValue(Parser.emailArg).get());
+        assertEquals("John street, block 123, #01-01", result.getOnceArgumentValue(Parser.addressArg).get());
+    }
 }
