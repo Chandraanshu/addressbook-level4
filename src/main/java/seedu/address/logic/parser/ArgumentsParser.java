@@ -11,7 +11,8 @@ import java.util.*;
 public class ArgumentsParser {
     /**
      * Describes an argument to be parsed. Each argument should have a unique
-     * name and prefix. Otherwise, behaviour is undefined.
+     * name and prefix and a prefix should not be a substring of any other prefixes.
+     * Otherwise, behaviour is undefined.
      */
     public static class Argument {
         private final String name;
@@ -31,8 +32,8 @@ public class ArgumentsParser {
     }
 
     public static class ParsedArguments {
-        Map<String, String> onceArguments = new HashMap<String, String>();
-        Map<String, List<String>> repeatableArguments = new HashMap<String, List<String>>();
+        Map<String, String> onceArguments = new HashMap<>();
+        Map<String, List<String>> repeatableArguments = new HashMap<>();
 
         /**
          * Adds an non-repeatable argument parsed result
@@ -46,6 +47,11 @@ public class ArgumentsParser {
             return isExisted;
         }
 
+        /**
+         * Adds an repeatable argument parsed result
+         * @param name name of the argument
+         * @param value value of the argument
+         */
         public void addRepeatableArgument(String name, String value) {
             if (this.repeatableArguments.containsKey(name)) {
                 this.repeatableArguments.get(name).add(value);
@@ -55,6 +61,10 @@ public class ArgumentsParser {
             this.repeatableArguments.put(name, argumentValues);
         }
 
+        /**
+         * Gets the value of a non-repeatable argument
+         * @param name name of the argument
+         */
         public Optional<String> getOnceArgument(String name) {
             try {
                 return Optional.of(this.onceArguments.get(name));
@@ -63,6 +73,10 @@ public class ArgumentsParser {
             }
         }
 
+        /**
+         * Gets the value of a repeatable argument
+         * @param name name of the argument
+         */
         public Optional<List<String>> getRepeatableArgument(String name) {
             try {
                 return Optional.of(this.repeatableArguments.get(name));
@@ -75,15 +89,12 @@ public class ArgumentsParser {
     /**
      * Intermediate data for an argument during parsing phase
      */
-    private class ArgumentParsingData {
-        public String name;
+    private class ArgumentParsingData extends Argument {
         public int startPos;
-        public boolean isRepeatable;
 
-        public ArgumentParsingData(String name, int startPos, boolean isRepeatable) {
-            this.name = name;
+        public ArgumentParsingData(Argument argument, int startPos) {
+            super(argument.name, argument.prefix, argument.isRepeatable);
             this.startPos = startPos;
-            this.isRepeatable = isRepeatable;
         }
     }
 
@@ -91,9 +102,44 @@ public class ArgumentsParser {
     private List<ArgumentParsingData> parsingData;
     private final ParsedArguments parsedArguments;
 
+    /**
+     * Creates an ArgumentParser that can parse arguments string as described
+     * by the `arguments` list
+     * @param arguments
+     */
     public ArgumentsParser(List<Argument> arguments) {
         this.arguments = arguments;
         parsingData = new ArrayList<>();
         parsedArguments = new ParsedArguments();
+    }
+
+    /**
+     * @param argumentsString arguments string of the form <prefix>data <prefix>data ...
+     */
+    public ParsedArguments parse(String argumentsString) {
+        for (Argument argument : this.arguments) {
+            extractArgumentParsingData(argumentsString, argument);
+        }
+        parsingData.sort((arg1, arg2) -> arg1.startPos - arg2.startPos);
+        return this.parsedArguments;
+    }
+
+    /**
+     * Extracts the values of each argument and store them in `parsedArguments`.
+     * This method requires `parsingData` to be fully filled and sorted according to
+     * each argument starting position.
+     */
+    private void extractArgumentValues() {
+
+    }
+
+    private void extractArgumentParsingData(String argumentsString, Argument argument) {
+        int argumentStart = argumentsString.indexOf(argument.prefix);
+        while (argumentStart != -1) {
+            ArgumentParsingData argumentParsingData =
+                    new ArgumentParsingData(argument, argumentStart);
+            parsingData.add(argumentParsingData);
+            argumentStart = argumentsString.indexOf(argument.prefix, argumentStart + 1);
+        }
     }
 }
