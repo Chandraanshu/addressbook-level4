@@ -4,6 +4,7 @@ import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.commands.*;
 import seedu.address.logic.parser.ArgumentsParser.Argument;
+import seedu.address.logic.parser.ArgumentsParser.ParsedArguments;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -37,13 +38,7 @@ public class Parser {
     public static final Argument emailArg = new Argument("email", "e/");
     public static final Argument addressArg = new Argument("address", "a/");
     public static final Argument tagArgs = new Argument("tags", "t/", true);
-    public static final List<Argument> addCmdArgs = new ArrayList<>();
-    {
-        addCmdArgs.add(phoneNumberArg);
-        addCmdArgs.add(emailArg);
-        addCmdArgs.add(addressArg);
-        addCmdArgs.add(tagArgs);
-    }
+    public static final List<Argument> addCmdArgs = Arrays.asList(phoneNumberArg, emailArg, addressArg, tagArgs);
 
     public Parser() {}
 
@@ -99,36 +94,28 @@ public class Parser {
      * @return the prepared command
      */
     private Command prepareAdd(String args){
-        final Matcher matcher = PERSON_DATA_ARGS_FORMAT.matcher(args.trim());
-        // Validate arg string format
-        if (!matcher.matches()) {
-            return new IncorrectCommand(String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
-        }
+        ArgumentsParser argsParser = new ArgumentsParser(Parser.addCmdArgs);
+        ParsedArguments parsedArguments = argsParser.parse(args.trim());
+
         try {
             return new AddCommand(
-                    matcher.group("name"),
-                    matcher.group("phone"),
-                    matcher.group("email"),
-                    matcher.group("address"),
-                    getTagsFromArgs(matcher.group("tagArguments"))
+                    parsedArguments.getNonPrefixArgument().get(),
+                    parsedArguments.getOnceArgumentValue(phoneNumberArg).get(),
+                    parsedArguments.getOnceArgumentValue(emailArg).get(),
+                    parsedArguments.getOnceArgumentValue(addressArg).get(),
+                    getTagsFromParsedArgs(parsedArguments)
             );
+        } catch (NoSuchElementException nsee) {
+            return new IncorrectCommand(String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
         } catch (IllegalValueException ive) {
             return new IncorrectCommand(ive.getMessage());
         }
     }
 
-    /**
-     * Extracts the new person's tags from the add command's tag arguments string.
-     * Merges duplicate tag strings.
-     */
-    private static Set<String> getTagsFromArgs(String tagArguments) throws IllegalValueException {
-        // no tags
-        if (tagArguments.isEmpty()) {
-            return Collections.emptySet();
-        }
-        // replace first delimiter prefix, then split
-        final Collection<String> tagStrings = Arrays.asList(tagArguments.replaceFirst(" t/", "").split(" t/"));
-        return new HashSet<>(tagStrings);
+    private Set<String> getTagsFromParsedArgs(ParsedArguments parsedArguments) {
+        Optional<List<String>> tagsOptional = parsedArguments.getRepeatableArgumentValue(tagArgs);
+        List<String> tags = tagsOptional.orElse(Collections.emptyList());
+        return new HashSet<>(tags);
     }
 
     /**
