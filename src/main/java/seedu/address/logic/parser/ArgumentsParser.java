@@ -36,53 +36,56 @@ public class ArgumentsParser {
         private Map<String, List<String>> repeatableArguments = new HashMap<>();
 
         /**
-         * Adds an non-repeatable argument parsed result
+         * Adds the result for an argument
+         * @param argument
+         * @param value value of the argument
+         * @return true if the argument is non-repeatable and already exists
+         */
+        public boolean addArgument(Argument argument, String value) {
+            if (argument.isRepeatable) {
+                addRepeatableArgument(argument.name, value);
+                return true;
+            }
+            return addOnceArgument(argument.name, value);
+        }
+
+        /**
          * @param name name of the argument
          * @param value value of the argument
-         * @return false if the argument already exists. New value will overrides old one
+         * @return false if the argument already exists. New value overrides old one
          */
-        public boolean addOnceArgument(String name, String value) {
+        private boolean addOnceArgument(String name, String value) {
             boolean isExisted = this.onceArguments.containsKey(name);
             this.onceArguments.put(name, value);
             return isExisted;
         }
 
         /**
-         * Adds an repeatable argument parsed result
          * @param name name of the argument
          * @param value value of the argument
          */
-        public void addRepeatableArgument(String name, String value) {
+        private void addRepeatableArgument(String name, String value) {
             if (this.repeatableArguments.containsKey(name)) {
                 this.repeatableArguments.get(name).add(value);
                 return;
             }
             List<String> argumentValues = new ArrayList<>();
+            argumentValues.add(value);
             this.repeatableArguments.put(name, argumentValues);
         }
 
-        /**
-         * Gets the value of a non-repeatable argument
-         * @param name name of the argument
-         */
-        public Optional<String> getOnceArgument(String name) {
-            try {
-                return Optional.of(this.onceArguments.get(name));
-            } catch (NullPointerException e) {
+        public Optional<String> getOnceArgumentValue(Argument argument) {
+            if (!this.onceArguments.containsKey(argument.name)) {
                 return Optional.empty();
             }
+            return Optional.of(this.onceArguments.get(argument.name));
         }
 
-        /**
-         * Gets the value of a repeatable argument
-         * @param name name of the argument
-         */
-        public Optional<List<String>> getRepeatableArgument(String name) {
-            try {
-                return Optional.of(this.repeatableArguments.get(name));
-            } catch (NullPointerException e) {
+        public Optional<List<String>> getRepeatableArgumentValue(Argument argument) {
+            if (!this.repeatableArguments.containsKey(argument.name)) {
                 return Optional.empty();
             }
+            return Optional.of(this.repeatableArguments.get(argument.name));
         }
     }
 
@@ -109,8 +112,8 @@ public class ArgumentsParser {
      */
     public ArgumentsParser(List<Argument> arguments) {
         this.arguments = arguments;
-        parsingData = new ArrayList<>();
-        parsedArguments = new ParsedArguments();
+        this.parsingData = new ArrayList<>();
+        this.parsedArguments = new ParsedArguments();
     }
 
     /**
@@ -125,25 +128,6 @@ public class ArgumentsParser {
         return this.parsedArguments;
     }
 
-    /**
-     * Extracts the values of each argument and store them in `parsedArguments`.
-     * This method requires `parsingData` to be fully filled and sorted according to
-     * each argument starting position.
-     */
-    private void extractArgumentValues(String argumentsString) {
-        for (int i = 0; i < this.parsingData.size() - 1; i++) {
-            ArgumentParsingData currentArg = this.parsingData.get(i);
-            ArgumentParsingData nextArg = this.parsingData.get(i + 1);
-            String value = argumentsString.substring(currentArg.startPos + currentArg.prefix.length(),
-                                                     nextArg.startPos);
-            if (currentArg.isRepeatable) {
-                this.parsedArguments.addRepeatableArgument(currentArg.name, value);
-            } else {
-                this.parsedArguments.addOnceArgument(currentArg.name, value);
-            }
-        }
-    }
-
     private void extractArgumentParsingData(String argumentsString, Argument argument) {
         int argumentStart = argumentsString.indexOf(argument.prefix);
         while (argumentStart != -1) {
@@ -152,5 +136,28 @@ public class ArgumentsParser {
             parsingData.add(argumentParsingData);
             argumentStart = argumentsString.indexOf(argument.prefix, argumentStart + 1);
         }
+    }
+
+    /**
+     * Extracts the values of each argument and store them in `parsedArguments`.
+     * This method requires `parsingData` to be fully filled and sorted according to
+     * each argument starting position.
+     */
+    private void extractArgumentValues(String argumentsString) {
+        if (parsingData.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < this.parsingData.size() - 1; i++) {
+            ArgumentParsingData currentArg = this.parsingData.get(i);
+            ArgumentParsingData nextArg = this.parsingData.get(i + 1);
+            String value = argumentsString.substring(currentArg.startPos + currentArg.prefix.length(),
+                                                     nextArg.startPos);
+            this.parsedArguments.addArgument(currentArg, value.trim());
+        }
+
+        ArgumentParsingData lastArg = this.parsingData.get(this.parsingData.size() - 1);
+        String value = argumentsString.substring(lastArg.startPos + lastArg.prefix.length());
+        this.parsedArguments.addArgument(lastArg, value.trim());
     }
 }

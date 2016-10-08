@@ -1,8 +1,9 @@
 package seedu.address.logic.parser;
 
-import seedu.address.logic.commands.*;
-import seedu.address.commons.util.StringUtil;
 import seedu.address.commons.exceptions.IllegalValueException;
+import seedu.address.commons.util.StringUtil;
+import seedu.address.logic.commands.*;
+import seedu.address.logic.parser.ArgumentsParser.Argument;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -32,6 +33,17 @@ public class Parser {
                     + " (?<isEmailPrivate>p?)e/(?<email>[^/]+)"
                     + " (?<isAddressPrivate>p?)a/(?<address>[^/]+)"
                     + "(?<tagArguments>(?: t/[^/]+)*)"); // variable number of tags
+    public static final Argument phoneNumberArg = new Argument("phoneNumber", "p/");
+    public static final Argument emailArg = new Argument("email", "e/");
+    public static final Argument addressArg = new Argument("address", "a/");
+    public static final Argument tagArgs = new Argument("tags", "t/", true);
+    public static final List<Argument> addCmdArgs = new ArrayList<>();
+    {
+        addCmdArgs.add(phoneNumberArg);
+        addCmdArgs.add(emailArg);
+        addCmdArgs.add(addressArg);
+        addCmdArgs.add(tagArgs);
+    }
 
     public Parser() {}
 
