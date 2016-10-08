@@ -15,9 +15,9 @@ public class ArgumentsParser {
      * Otherwise, behaviour is undefined.
      */
     public static class Argument {
-        private final String name;
-        private final String prefix;
-        private boolean isRepeatable;
+        protected final String name;
+        protected final String prefix;
+        protected boolean isRepeatable;
 
         public Argument(String name, String prefix) {
             this.name = name;
@@ -32,8 +32,8 @@ public class ArgumentsParser {
     }
 
     public static class ParsedArguments {
-        Map<String, String> onceArguments = new HashMap<>();
-        Map<String, List<String>> repeatableArguments = new HashMap<>();
+        private Map<String, String> onceArguments = new HashMap<>();
+        private Map<String, List<String>> repeatableArguments = new HashMap<>();
 
         /**
          * Adds an non-repeatable argument parsed result
@@ -121,6 +121,7 @@ public class ArgumentsParser {
             extractArgumentParsingData(argumentsString, argument);
         }
         parsingData.sort((arg1, arg2) -> arg1.startPos - arg2.startPos);
+        extractArgumentValues(argumentsString);
         return this.parsedArguments;
     }
 
@@ -129,8 +130,18 @@ public class ArgumentsParser {
      * This method requires `parsingData` to be fully filled and sorted according to
      * each argument starting position.
      */
-    private void extractArgumentValues() {
-
+    private void extractArgumentValues(String argumentsString) {
+        for (int i = 0; i < this.parsingData.size() - 1; i++) {
+            ArgumentParsingData currentArg = this.parsingData.get(i);
+            ArgumentParsingData nextArg = this.parsingData.get(i + 1);
+            String value = argumentsString.substring(currentArg.startPos + currentArg.prefix.length(),
+                                                     nextArg.startPos);
+            if (currentArg.isRepeatable) {
+                this.parsedArguments.addRepeatableArgument(currentArg.name, value);
+            } else {
+                this.parsedArguments.addOnceArgument(currentArg.name, value);
+            }
+        }
     }
 
     private void extractArgumentParsingData(String argumentsString, Argument argument) {
