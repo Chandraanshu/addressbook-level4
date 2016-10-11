@@ -94,9 +94,9 @@ public class Parser {
         try {
             return new AddCommand(
                     parsedArguments.getNonPrefixArgument().get(),
-                    parsedArguments.getOnceArgumentValue(phoneNumberArg).get(),
-                    parsedArguments.getOnceArgumentValue(emailArg).get(),
-                    parsedArguments.getOnceArgumentValue(addressArg).get(),
+                    parsedArguments.getNonRepeatableArgumentValue(phoneNumberArg).get(),
+                    parsedArguments.getNonRepeatableArgumentValue(emailArg).get(),
+                    parsedArguments.getNonRepeatableArgumentValue(addressArg).get(),
                     getTagsFromParsedArgs(parsedArguments)
             );
         } catch (NoSuchElementException nsee) {

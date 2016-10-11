@@ -26,9 +26,9 @@ public class CommandTokenizerTest {
                 "John Doe p/98765432 e/johnd@gmail.com a/John street, block 123, #01-01");
 
         assertEquals("John Doe", result.getNonPrefixArgument().get());
-        assertEquals("98765432", result.getOnceArgumentValue(Parser.phoneNumberArg).get());
-        assertEquals("johnd@gmail.com", result.getOnceArgumentValue(Parser.emailArg).get());
-        assertEquals("John street, block 123, #01-01", result.getOnceArgumentValue(Parser.addressArg).get());
+        assertEquals("98765432", result.getNonRepeatableArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("johnd@gmail.com", result.getNonRepeatableArgumentValue(Parser.emailArg).get());
+        assertEquals("John street, block 123, #01-01", result.getNonRepeatableArgumentValue(Parser.addressArg).get());
     }
 
     @Test
@@ -41,9 +41,9 @@ public class CommandTokenizerTest {
         tags.add("friend");
 
         assertEquals("Betsy Crowe", result.getNonPrefixArgument().get());
-        assertEquals("1234567", result.getOnceArgumentValue(Parser.phoneNumberArg).get());
-        assertEquals("betsycrowe@gmail.com", result.getOnceArgumentValue(Parser.emailArg).get());
-        assertEquals("Newgate Prison", result.getOnceArgumentValue(Parser.addressArg).get());
+        assertEquals("1234567", result.getNonRepeatableArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("betsycrowe@gmail.com", result.getNonRepeatableArgumentValue(Parser.emailArg).get());
+        assertEquals("Newgate Prison", result.getNonRepeatableArgumentValue(Parser.addressArg).get());
         assertEquals(tags, result.getRepeatableArgumentValue(Parser.tagArgs).get());
     }
 
@@ -54,8 +54,8 @@ public class CommandTokenizerTest {
                 "John Doe e/johnd@gmail.com a/John street, block 123, #01-01 p/98765432");
 
         assertEquals("John Doe", result.getNonPrefixArgument().get());
-        assertEquals("98765432", result.getOnceArgumentValue(Parser.phoneNumberArg).get());
-        assertEquals("johnd@gmail.com", result.getOnceArgumentValue(Parser.emailArg).get());
-        assertEquals("John street, block 123, #01-01", result.getOnceArgumentValue(Parser.addressArg).get());
+        assertEquals("98765432", result.getNonRepeatableArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("johnd@gmail.com", result.getNonRepeatableArgumentValue(Parser.emailArg).get());
+        assertEquals("John street, block 123, #01-01", result.getNonRepeatableArgumentValue(Parser.addressArg).get());
     }
 }

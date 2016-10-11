@@ -14,26 +14,52 @@ public class CommandTokenizer {
      * name and prefix and a prefix should not be a substring of any other prefixes.
      * Otherwise, behaviour is undefined.
      */
-    public static class Argument {
+    public abstract static class Argument {
         protected final String name;
-        protected final String prefix;
-        protected boolean isRepeatable;
 
-        public Argument(String name, String prefix) {
+        public Argument(String name) {
             this.name = name;
-            this.prefix = prefix;
-            this.isRepeatable = false;
         }
 
-        public Argument(String name, String prefix, boolean isRepeatable) {
-            this(name, prefix);
-            this.isRepeatable = isRepeatable;
+        public String getName() {
+            return this.name;
+        }
+    }
+
+    public static class NonPrefixedArgument extends Argument {
+        public NonPrefixedArgument(String name) {
+            super(name);
+        }
+    }
+
+    public abstract static class PrefixedArgument extends Argument {
+        private final String prefix;
+
+        public PrefixedArgument(String name, String prefix) {
+            super(name);
+            this.prefix = prefix;
+        }
+
+        public String getPrefix() {
+            return this.prefix;
+        }
+    }
+
+    public static class RepeatableArgument extends PrefixedArgument {
+        public RepeatableArgument(String name, String prefix) {
+            super(name, prefix);
+        }
+    }
+
+    public static class NonRepeatableArgument extends PrefixedArgument {
+        public NonRepeatableArgument(String name, String prefix) {
+            super(name, prefix);
         }
     }
 
     public static class ParsedArguments {
         private String nonPrefixArgument = "";
-        private Map<String, String> onceArguments = new HashMap<>();
+        private Map<String, String> nonRepeatableArguments = new HashMap<>();
         private Map<String, List<String>> repeatableArguments = new HashMap<>();
 
         /**
@@ -47,7 +73,7 @@ public class CommandTokenizer {
                 addRepeatableArgument(argument.name, value);
                 return true;
             }
-            return addOnceArgument(argument.name, value);
+            return addNonRepeatableArgument(argument.name, value);
         }
 
         public void addNonPrefixArgument(String value) {
@@ -59,9 +85,9 @@ public class CommandTokenizer {
          * @param value value of the argument
          * @return false if the argument already exists. New value overrides old one
          */
-        private boolean addOnceArgument(String name, String value) {
-            boolean isExisted = this.onceArguments.containsKey(name);
-            this.onceArguments.put(name, value);
+        private boolean addNonRepeatableArgument(String name, String value) {
+            boolean isExisted = this.nonRepeatableArguments.containsKey(name);
+            this.nonRepeatableArguments.put(name, value);
             return isExisted;
         }
 
@@ -79,21 +105,21 @@ public class CommandTokenizer {
             this.repeatableArguments.put(name, argumentValues);
         }
 
-        public Optional<String> getOnceArgumentValue(Argument argument) {
-            if (!this.onceArguments.containsKey(argument.name)) {
+        public Optional<String> getArgumentValue(NonRepeatableArgument argument) {
+            if (!this.nonRepeatableArguments.containsKey(argument.getName())) {
                 return Optional.empty();
             }
-            return Optional.of(this.onceArguments.get(argument.name));
+            return Optional.of(this.nonRepeatableArguments.get(argument.getName()));
         }
 
-        public Optional<List<String>> getRepeatableArgumentValue(Argument argument) {
-            if (!this.repeatableArguments.containsKey(argument.name)) {
+        public Optional<List<String>> getArgumentValue(RepeatableArgument argument) {
+            if (!this.repeatableArguments.containsKey(argument.getName())) {
                 return Optional.empty();
             }
-            return Optional.of(this.repeatableArguments.get(argument.name));
+            return Optional.of(this.repeatableArguments.get(argument.getName()));
         }
 
-        public Optional<String> getNonPrefixArgument() {
+        public Optional<String> getArgumentValue(NonPrefixedArgument argument) {
             if (this.nonPrefixArgument.isEmpty()) {
                 return Optional.empty();
             }
@@ -172,8 +198,7 @@ public class CommandTokenizer {
         for (int i = 0; i < this.parsingData.size() - 1; i++) {
             ArgumentParsingData currentArg = this.parsingData.get(i);
             ArgumentParsingData nextArg = this.parsingData.get(i + 1);
-            value = argumentsString.substring(currentArg.startPos + currentArg.prefix.length(),
-                                                     nextArg.startPos);
+            value = argumentsString.substring(currentArg.startPos + currentArg.prefix.length(), nextArg.startPos);
             this.parsedArguments.addArgument(currentArg, value.trim());
         }
 
