@@ -3,8 +3,8 @@ package seedu.address.logic.parser;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.commands.*;
-import seedu.address.logic.parser.ArgumentsParser.Argument;
-import seedu.address.logic.parser.ArgumentsParser.ParsedArguments;
+import seedu.address.logic.parser.CommandTokenizer.Argument;
+import seedu.address.logic.parser.CommandTokenizer.ParsedArguments;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -88,7 +88,7 @@ public class Parser {
      * @return the prepared command
      */
     private Command prepareAdd(String args){
-        ArgumentsParser argsParser = new ArgumentsParser(Parser.addCmdArgs);
+        CommandTokenizer argsParser = new CommandTokenizer(Parser.addCmdArgs);
         ParsedArguments parsedArguments = argsParser.parse(args.trim());
 
         try {

@@ -8,7 +8,7 @@ import java.util.*;
  * whitespaces will be discarded. Argument may be allowed to be repeated or not. If a
  * non-repeatable argument is repeated, its last value will take precedence.
  */
-public class ArgumentsParser {
+public class CommandTokenizer {
     /**
      * Describes an argument to be parsed. Each argument should have a unique
      * name and prefix and a prefix should not be a substring of any other prefixes.
@@ -122,7 +122,7 @@ public class ArgumentsParser {
      * by the `arguments` list
      * @param arguments
      */
-    public ArgumentsParser(List<Argument> arguments) {
+    public CommandTokenizer(List<Argument> arguments) {
         this.arguments = arguments;
         this.parsingData = new ArrayList<>();
         this.parsedArguments = new ParsedArguments();

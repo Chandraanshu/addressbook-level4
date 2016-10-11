@@ -1,7 +1,7 @@
 package seedu.address.logic.parser;
 
 import org.junit.BeforeClass;
-import seedu.address.logic.parser.ArgumentsParser.ParsedArguments;
+import seedu.address.logic.parser.CommandTokenizer.ParsedArguments;
 
 import org.junit.Test;
 
@@ -10,7 +10,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class ArgumentsParserTest {
+public class CommandTokenizerTest {
     /**
      * Makes sure that static members of Parser are initialized
      */
@@ -21,7 +21,7 @@ public class ArgumentsParserTest {
 
     @Test
     public void parse_validAddCmdArgsNoTags() {
-        ArgumentsParser argsParser = new ArgumentsParser(Parser.addCmdArgs);
+        CommandTokenizer argsParser = new CommandTokenizer(Parser.addCmdArgs);
         ParsedArguments result = argsParser.parse(
                 "John Doe p/98765432 e/johnd@gmail.com a/John street, block 123, #01-01");
 
@@ -33,8 +33,8 @@ public class ArgumentsParserTest {
 
     @Test
     public void parse_validAddCmdArgsWithTags() {
-        ArgumentsParser argsParser = new ArgumentsParser(Parser.addCmdArgs);
-        ArgumentsParser.ParsedArguments result = argsParser.parse(
+        CommandTokenizer argsParser = new CommandTokenizer(Parser.addCmdArgs);
+        CommandTokenizer.ParsedArguments result = argsParser.parse(
                 "Betsy Crowe p/1234567 e/betsycrowe@gmail.com a/Newgate Prison t/criminal t/friend");
         List<String> tags = new ArrayList<>();
         tags.add("criminal");
@@ -49,7 +49,7 @@ public class ArgumentsParserTest {
 
     @Test
     public void parse_validAddCmdArgsChangeOrder() {
-        ArgumentsParser argsParser = new ArgumentsParser(Parser.addCmdArgs);
+        CommandTokenizer argsParser = new CommandTokenizer(Parser.addCmdArgs);
         ParsedArguments result = argsParser.parse(
                 "John Doe e/johnd@gmail.com a/John street, block 123, #01-01 p/98765432");
 
