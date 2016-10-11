@@ -25,10 +25,10 @@ public class CommandTokenizerTest {
         ParsedArguments result = argsParser.parse(
                 "John Doe p/98765432 e/johnd@gmail.com a/John street, block 123, #01-01");
 
-        assertEquals("John Doe", result.getNonPrefixArgument().get());
-        assertEquals("98765432", result.getNonRepeatableArgumentValue(Parser.phoneNumberArg).get());
-        assertEquals("johnd@gmail.com", result.getNonRepeatableArgumentValue(Parser.emailArg).get());
-        assertEquals("John street, block 123, #01-01", result.getNonRepeatableArgumentValue(Parser.addressArg).get());
+        assertEquals("John Doe", result.getArgumentValue(Parser.nameArg).get());
+        assertEquals("98765432", result.getArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("johnd@gmail.com", result.getArgumentValue(Parser.emailArg).get());
+        assertEquals("John street, block 123, #01-01", result.getArgumentValue(Parser.addressArg).get());
     }
 
     @Test
@@ -40,11 +40,11 @@ public class CommandTokenizerTest {
         tags.add("criminal");
         tags.add("friend");
 
-        assertEquals("Betsy Crowe", result.getNonPrefixArgument().get());
-        assertEquals("1234567", result.getNonRepeatableArgumentValue(Parser.phoneNumberArg).get());
-        assertEquals("betsycrowe@gmail.com", result.getNonRepeatableArgumentValue(Parser.emailArg).get());
-        assertEquals("Newgate Prison", result.getNonRepeatableArgumentValue(Parser.addressArg).get());
-        assertEquals(tags, result.getRepeatableArgumentValue(Parser.tagArgs).get());
+        assertEquals("Betsy Crowe", result.getArgumentValue(Parser.nameArg).get());
+        assertEquals("1234567", result.getArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("betsycrowe@gmail.com", result.getArgumentValue(Parser.emailArg).get());
+        assertEquals("Newgate Prison", result.getArgumentValue(Parser.addressArg).get());
+        assertEquals(tags, result.getArgumentValue(Parser.tagArgs).get());
     }
 
     @Test
@@ -53,9 +53,9 @@ public class CommandTokenizerTest {
         ParsedArguments result = argsParser.parse(
                 "John Doe e/johnd@gmail.com a/John street, block 123, #01-01 p/98765432");
 
-        assertEquals("John Doe", result.getNonPrefixArgument().get());
-        assertEquals("98765432", result.getNonRepeatableArgumentValue(Parser.phoneNumberArg).get());
-        assertEquals("johnd@gmail.com", result.getNonRepeatableArgumentValue(Parser.emailArg).get());
-        assertEquals("John street, block 123, #01-01", result.getNonRepeatableArgumentValue(Parser.addressArg).get());
+        assertEquals("John Doe", result.getArgumentValue(Parser.nameArg).get());
+        assertEquals("98765432", result.getArgumentValue(Parser.phoneNumberArg).get());
+        assertEquals("johnd@gmail.com", result.getArgumentValue(Parser.emailArg).get());
+        assertEquals("John street, block 123, #01-01", result.getArgumentValue(Parser.addressArg).get());
     }
 }

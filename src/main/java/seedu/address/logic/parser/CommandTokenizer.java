@@ -10,9 +10,7 @@ import java.util.*;
  */
 public class CommandTokenizer {
     /**
-     * Describes an argument to be parsed. Each argument should have a unique
-     * name and prefix and a prefix should not be a substring of any other prefixes.
-     * Otherwise, behaviour is undefined.
+     * Describes an argument to be parsed
      */
     public abstract static class Argument {
         protected final String name;
@@ -24,14 +22,28 @@ public class CommandTokenizer {
         public String getName() {
             return this.name;
         }
+
+        public abstract boolean isPrefixed();
     }
 
+    /**
+     * Describes a non-prefixed argument.
+     */
     public static class NonPrefixedArgument extends Argument {
         public NonPrefixedArgument(String name) {
             super(name);
         }
+
+        @Override
+        public boolean isPrefixed() {
+            return false;
+        }
     }
 
+    /**
+     * Describes a prefixed argument. Each argument should have a unique name and prefix.
+     * A prefix should not be a substring of any other prefixes. Otherwise, behaviour is undefined.
+     */
     public abstract static class PrefixedArgument extends Argument {
         private final String prefix;
 
@@ -43,40 +55,68 @@ public class CommandTokenizer {
         public String getPrefix() {
             return this.prefix;
         }
+
+        @Override
+        public boolean isPrefixed() {
+            return true;
+        }
+
+        public abstract boolean isRepeatable();
     }
 
+    /**
+     * Describes a repeatable prefixed argument. All values of this argument are accumulated
+     */
     public static class RepeatableArgument extends PrefixedArgument {
         public RepeatableArgument(String name, String prefix) {
             super(name, prefix);
         }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
     }
 
+    /**
+     * Describes a non-repeatable prefixed argument. Later value of this argument overrides earlier ones.
+     */
     public static class NonRepeatableArgument extends PrefixedArgument {
         public NonRepeatableArgument(String name, String prefix) {
             super(name, prefix);
         }
+
+        @Override
+        public boolean isRepeatable() {
+            return false;
+        }
     }
 
+    /**
+     * Stores values for all arguments extracted from the arguments string
+     */
     public static class ParsedArguments {
         private String nonPrefixArgument = "";
         private Map<String, String> nonRepeatableArguments = new HashMap<>();
         private Map<String, List<String>> repeatableArguments = new HashMap<>();
 
         /**
-         * Adds the result for an argument
-         * @param argument
-         * @param value value of the argument
-         * @return true if the argument is non-repeatable and already exists
+         * Adds the result value for an argument
+         * @return false if the argument is non-repeatable and already exists
          */
         public boolean addArgument(Argument argument, String value) {
-            if (argument.isRepeatable) {
+            if (!argument.isPrefixed()) {
+                addNonPrefixArgument(value);
+                return true;
+            }
+            if (((PrefixedArgument) argument).isRepeatable()) {
                 addRepeatableArgument(argument.name, value);
                 return true;
             }
             return addNonRepeatableArgument(argument.name, value);
         }
 
-        public void addNonPrefixArgument(String value) {
+        private void addNonPrefixArgument(String value) {
             this.nonPrefixArgument = value;
         }
 
@@ -128,82 +168,146 @@ public class CommandTokenizer {
     }
 
     /**
-     * Intermediate data for an argument during parsing phase
+     * Intermediate data for each prefix argument in the arguments string during parsing phase
      */
-    private class ArgumentParsingData extends Argument {
-        public int startPos;
+    private class PrefixParsingData {
+        private int startPos;
+        private PrefixedArgument argument;
 
-        public ArgumentParsingData(Argument argument, int startPos) {
-            super(argument.name, argument.prefix, argument.isRepeatable);
+        public PrefixParsingData(PrefixedArgument argument, int startPos) {
+            this.argument = argument;
             this.startPos = startPos;
+        }
+
+        public String getPrefix() {
+            return this.argument.getPrefix();
+        }
+
+        public int getStartPos() {
+            return this.startPos;
+        }
+
+        public PrefixedArgument getArgument() {
+            return this.argument;
         }
     }
 
-    private final List<Argument> arguments;
-    private List<ArgumentParsingData> parsingData;
-    private final ParsedArguments parsedArguments;
+    private final List<PrefixedArgument> prefixedArguments;
+    private final NonPrefixedArgument nonPrefixedArgument;
 
     /**
-     * Creates an ArgumentParser that can parse arguments string as described
-     * by the `arguments` list
-     * @param arguments
+     * Creates an ArgumentParser that can parse arguments string as described by the `arguments` list
      */
     public CommandTokenizer(List<Argument> arguments) {
-        this.arguments = arguments;
-        this.parsingData = new ArrayList<>();
-        this.parsedArguments = new ParsedArguments();
+        this.prefixedArguments = filterPrefixedArguments(arguments);
+        this.nonPrefixedArgument = getNonPrefixedArgument(arguments);
+    }
+
+    public List<PrefixedArgument> filterPrefixedArguments(List<Argument> arguments) {
+        List<PrefixedArgument> prefixedArguments = new ArrayList<>();
+        for (Argument arg : arguments) {
+            if (arg.isPrefixed()) {
+                prefixedArguments.add((PrefixedArgument) arg);
+            }
+        }
+        return prefixedArguments;
+    }
+
+    private NonPrefixedArgument getNonPrefixedArgument(List<Argument> arguments) {
+        for (Argument arg : arguments) {
+            if (!arg.isPrefixed()) {
+                return (NonPrefixedArgument) arg;
+            }
+        }
+        return new NonPrefixedArgument("");
     }
 
     /**
      * @param argumentsString arguments string of the form: non-prefix-args <prefix>data <prefix>data ...
      */
     public ParsedArguments parse(String argumentsString) {
-        for (Argument argument : this.arguments) {
-            extractArgumentParsingData(argumentsString, argument);
+        List<PrefixParsingData> prefixParsingDatas = new ArrayList<>();
+
+        for (PrefixedArgument prefixedArgument : this.prefixedArguments) {
+            prefixParsingDatas.addAll(extractPrefixParsingData(argumentsString, prefixedArgument));
         }
-        parsingData.sort((arg1, arg2) -> arg1.startPos - arg2.startPos);
-        extractArgumentValues(argumentsString);
-        return this.parsedArguments;
+        prefixParsingDatas.sort((arg1, arg2) -> arg1.startPos - arg2.startPos);
+        return extractArgumentValues(argumentsString, prefixParsingDatas);
     }
 
-    private void extractArgumentParsingData(String argumentsString, Argument argument) {
-        int argumentStart = argumentsString.indexOf(argument.prefix);
+    /**
+     * Extracts parsing data for a prefixed argument specific to an arguments string
+     */
+    private List<PrefixParsingData> extractPrefixParsingData(String argumentsString,
+                                                             PrefixedArgument prefixedArgument) {
+        List<PrefixParsingData> prefixParsingDatas = new ArrayList<>();
+        int argumentStart = argumentsString.indexOf(prefixedArgument.getPrefix());
         while (argumentStart != -1) {
-            ArgumentParsingData argumentParsingData =
-                    new ArgumentParsingData(argument, argumentStart);
-            parsingData.add(argumentParsingData);
-            argumentStart = argumentsString.indexOf(argument.prefix, argumentStart + 1);
+            PrefixParsingData prefixParsingData = new PrefixParsingData(prefixedArgument, argumentStart);
+            prefixParsingDatas.add(prefixParsingData);
+            argumentStart = argumentsString.indexOf(prefixedArgument.getPrefix(), argumentStart + 1);
         }
+        return prefixParsingDatas;
     }
 
     /**
      * Extracts the values of each argument and store them in `parsedArguments`.
-     * This method requires `parsingData` to be fully filled and sorted according to
-     * each argument starting position.
+     * This method requires `parsingData` to be fully reflects all prefixes in the
+     * `argumentsString` and sorted according to each argument starting position.
      */
-    private void extractArgumentValues(String argumentsString) {
-        if (parsingData.isEmpty()) {
+    private ParsedArguments extractArgumentValues(String argumentsString,
+                                                  List<PrefixParsingData> prefixParsingDatas) {
+        ParsedArguments parsedArguments = new ParsedArguments();
+
+        extractNonPrefixedArgumentValue(argumentsString, prefixParsingDatas, parsedArguments);
+
+        for (int i = 0; i < prefixParsingDatas.size() - 1; i++) {
+            extractMiddleArgumentValue(argumentsString, prefixParsingDatas, i, parsedArguments);
+        }
+
+        extractLastArgumentValue(argumentsString, prefixParsingDatas, parsedArguments);
+
+        return parsedArguments;
+    }
+
+    private void extractNonPrefixedArgumentValue(String argumentsString,
+                                                 List<PrefixParsingData> prefixParsingDatas,
+                                                 ParsedArguments parsedArguments) {
+        if (prefixParsingDatas.isEmpty()) {
+            parsedArguments.addArgument(this.nonPrefixedArgument, argumentsString.trim());
             return;
         }
 
-        ArgumentParsingData firstArg = this.parsingData.get(0);
         String value = "";
-        if (firstArg.startPos > 0) {
-            value = argumentsString.substring(0, firstArg.startPos).trim();
+        PrefixParsingData firstArg = prefixParsingDatas.get(0);
+        if (firstArg.getStartPos() > 0) {
+            value = argumentsString.substring(0, firstArg.getStartPos()).trim();
         }
-        if (!value.isEmpty()) {
-            this.parsedArguments.addNonPrefixArgument(value);
-        }
+        parsedArguments.addArgument(this.nonPrefixedArgument, value);
+    }
 
-        for (int i = 0; i < this.parsingData.size() - 1; i++) {
-            ArgumentParsingData currentArg = this.parsingData.get(i);
-            ArgumentParsingData nextArg = this.parsingData.get(i + 1);
-            value = argumentsString.substring(currentArg.startPos + currentArg.prefix.length(), nextArg.startPos);
-            this.parsedArguments.addArgument(currentArg, value.trim());
-        }
+    private void extractMiddleArgumentValue(String argumentsString,
+                                            List<PrefixParsingData> prefixParsingDatas,
+                                            int prefixIndex,
+                                            ParsedArguments parsedArguments) {
+        PrefixParsingData currentArg = prefixParsingDatas.get(prefixIndex);
+        PrefixParsingData nextArg = prefixParsingDatas.get(prefixIndex + 1);
+        int valueStartPos = currentArg.getStartPos() + currentArg.getPrefix().length();
+        String value = argumentsString.substring(valueStartPos, nextArg.getStartPos());
 
-        ArgumentParsingData lastArg = this.parsingData.get(this.parsingData.size() - 1);
-        value = argumentsString.substring(lastArg.startPos + lastArg.prefix.length());
-        this.parsedArguments.addArgument(lastArg, value.trim());
+        parsedArguments.addArgument(currentArg.getArgument(), value.trim());
+    }
+
+    private void extractLastArgumentValue(String argumentsString,
+                                          List<PrefixParsingData> prefixParsingDatas,
+                                          ParsedArguments parsedArguments) {
+        if (prefixParsingDatas.isEmpty()) {
+            return;
+        }
+        PrefixParsingData lastArg = prefixParsingDatas.get(prefixParsingDatas.size() - 1);
+        int valueStartPos = lastArg.getStartPos() + lastArg.getPrefix().length();
+        String value = argumentsString.substring(valueStartPos);
+
+        parsedArguments.addArgument(lastArg.getArgument(), value.trim());
     }
 }

@@ -3,8 +3,7 @@ package seedu.address.logic.parser;
 import seedu.address.commons.exceptions.IllegalValueException;
 import seedu.address.commons.util.StringUtil;
 import seedu.address.logic.commands.*;
-import seedu.address.logic.parser.CommandTokenizer.Argument;
-import seedu.address.logic.parser.CommandTokenizer.ParsedArguments;
+import seedu.address.logic.parser.CommandTokenizer.*;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -28,11 +27,13 @@ public class Parser {
     private static final Pattern KEYWORDS_ARGS_FORMAT =
             Pattern.compile("(?<keywords>\\S+(?:\\s+\\S+)*)"); // one or more keywords separated by whitespace
 
-    public static final Argument phoneNumberArg = new Argument("phoneNumber", "p/");
-    public static final Argument emailArg = new Argument("email", "e/");
-    public static final Argument addressArg = new Argument("address", "a/");
-    public static final Argument tagArgs = new Argument("tags", "t/", true);
-    public static final List<Argument> addCmdArgs = Arrays.asList(phoneNumberArg, emailArg, addressArg, tagArgs);
+    public static final NonPrefixedArgument nameArg = new NonPrefixedArgument("name");
+    public static final NonRepeatableArgument phoneNumberArg = new NonRepeatableArgument("phoneNumber", "p/");
+    public static final NonRepeatableArgument emailArg = new NonRepeatableArgument("email", "e/");
+    public static final NonRepeatableArgument addressArg = new NonRepeatableArgument("address", "a/");
+    public static final RepeatableArgument tagArgs = new RepeatableArgument("tags", "t/");
+    public static final List<Argument> addCmdArgs = Arrays.asList(
+            nameArg, phoneNumberArg, emailArg, addressArg, tagArgs);
 
     public Parser() {}
 
@@ -93,11 +94,11 @@ public class Parser {
 
         try {
             return new AddCommand(
-                    parsedArguments.getNonPrefixArgument().get(),
-                    parsedArguments.getNonRepeatableArgumentValue(phoneNumberArg).get(),
-                    parsedArguments.getNonRepeatableArgumentValue(emailArg).get(),
-                    parsedArguments.getNonRepeatableArgumentValue(addressArg).get(),
-                    getTagsFromParsedArgs(parsedArguments)
+                    parsedArguments.getArgumentValue(nameArg).get(),
+                    parsedArguments.getArgumentValue(phoneNumberArg).get(),
+                    parsedArguments.getArgumentValue(emailArg).get(),
+                    parsedArguments.getArgumentValue(addressArg).get(),
+                    toSet(parsedArguments.getArgumentValue(tagArgs))
             );
         } catch (NoSuchElementException nsee) {
             return new IncorrectCommand(String.format(MESSAGE_INVALID_COMMAND_FORMAT, AddCommand.MESSAGE_USAGE));
@@ -106,8 +107,7 @@ public class Parser {
         }
     }
 
-    private Set<String> getTagsFromParsedArgs(ParsedArguments parsedArguments) {
-        Optional<List<String>> tagsOptional = parsedArguments.getRepeatableArgumentValue(tagArgs);
+    private Set<String> toSet(Optional<List<String>> tagsOptional) {
         List<String> tags = tagsOptional.orElse(Collections.emptyList());
         return new HashSet<>(tags);
     }
